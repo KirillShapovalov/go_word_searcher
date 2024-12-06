@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KirillShapovalov/go_word_searcher/services/utils"
+	"github.com/KirillShapovalov/go_word_searcher/services/fileUtils"
 	"github.com/KirillShapovalov/go_word_searcher/storage"
 )
 
@@ -104,7 +104,7 @@ func containsWordInFile(filePath, keyword string) (bool, error) {
 		log.Printf("warning: failed to open %s to search in: %v", filePath, err)
 		return false, fmt.Errorf("failed to open %s to search in: %v", filePath, err)
 	}
-	defer utils.HandleDeferClose("file to search", file.Close)
+	defer fileUtils.HandleDeferClose("file to search", file.Close)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {

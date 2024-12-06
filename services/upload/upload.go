@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/KirillShapovalov/go_word_searcher/services/utils"
+	"github.com/KirillShapovalov/go_word_searcher/services/fileUtils"
 )
 
 // Путь к папке для хранения файлов
@@ -33,7 +33,7 @@ func SaveFile(src multipart.File, header *multipart.FileHeader) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer utils.HandleDeferClose("destination file", dst.Close)
+	defer fileUtils.HandleDeferClose("destination file", dst.Close)
 
 	// Копируем содержимое загруженного файла в целевой файл
 	if _, err = io.Copy(dst, src); err != nil {

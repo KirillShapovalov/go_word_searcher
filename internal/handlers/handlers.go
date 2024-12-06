@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/KirillShapovalov/go_word_searcher/services/fileUtils"
 	"github.com/KirillShapovalov/go_word_searcher/services/search"
 	"github.com/KirillShapovalov/go_word_searcher/services/upload"
-	"github.com/KirillShapovalov/go_word_searcher/services/utils"
 	"github.com/KirillShapovalov/go_word_searcher/storage"
 	"net/http"
 
@@ -29,7 +29,7 @@ func (h *Handlers) UploadFile(c *gin.Context) {
 		return
 	}
 
-	defer utils.HandleDeferClose("source file", file.Close)
+	defer fileUtils.HandleDeferClose("source file", file.Close)
 
 	// Сохраняем файл
 	filePath, err := upload.SaveFile(file, header)

@@ -3,7 +3,7 @@ package storage
 import (
 	"bufio"
 	"fmt"
-	"github.com/KirillShapovalov/go_word_searcher/services/utils"
+	"github.com/KirillShapovalov/go_word_searcher/services/fileUtils"
 	"os"
 	"strings"
 	"sync"
@@ -46,7 +46,7 @@ func (s *FileStorage) IndexFile(filePath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file for indexing: %w", err)
 	}
-	defer utils.HandleDeferClose("index file", file.Close)
+	defer fileUtils.HandleDeferClose("index file", file.Close)
 
 	scanner := bufio.NewScanner(file)
 	localIndex := make(map[string]bool) // Используем локальный индекс для исключения дублирования слов в одном файле
