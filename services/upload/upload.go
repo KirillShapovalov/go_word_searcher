@@ -10,7 +10,7 @@ import (
 	"github.com/KirillShapovalov/go_word_searcher/services/fileUtils"
 )
 
-// Путь к папке для хранения файлов
+// UploadDir Путь к папке для хранения файлов
 const UploadDir = "./uploads/"
 
 func SaveFile(src multipart.File, header *multipart.FileHeader) (string, error) {

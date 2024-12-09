@@ -9,39 +9,47 @@ import (
 	"sync"
 )
 
-type FileStorage struct {
+type FileManager struct {
 	files []string
-	Index map[string][]string
 	mu    sync.Mutex
-	IdxMu sync.RWMutex
+}
+
+type IndexManager struct {
+	Index map[string][]string
+	Mu    sync.RWMutex
+}
+
+type FileStorage struct {
+	FileManager  *FileManager
+	IndexManager *IndexManager
 }
 
 func NewFileStorage() *FileStorage {
 	return &FileStorage{
-		files: []string{},
-		Index: make(map[string][]string),
+		FileManager:  &FileManager{files: []string{}},
+		IndexManager: &IndexManager{Index: make(map[string][]string)},
 	}
 }
 
-func (s *FileStorage) AddFile(filePath string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.files = append(s.files, filePath)
+func (fm *FileManager) AddFile(filePath string) {
+	fm.mu.Lock()
+	defer fm.mu.Unlock()
+	fm.files = append(fm.files, filePath)
 }
 
-func (s *FileStorage) GetFiles() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return append([]string{}, s.files...)
+func (fm *FileManager) GetFiles() []string {
+	fm.mu.Lock()
+	defer fm.mu.Unlock()
+	return append([]string{}, fm.files...)
 }
 
-func (s *FileStorage) ClearFiles() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.files = []string{}
+func (fm *FileManager) ClearFiles() {
+	fm.mu.Lock()
+	defer fm.mu.Unlock()
+	fm.files = []string{}
 }
 
-func (s *FileStorage) IndexFile(filePath string) error {
+func (im *IndexManager) IndexFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file for indexing: %w", err)
@@ -65,10 +73,10 @@ func (s *FileStorage) IndexFile(filePath string) error {
 	}
 
 	// Обновляем глобальный индекс с использованием мьютекса
-	s.IdxMu.Lock()
-	defer s.IdxMu.Unlock()
+	im.Mu.Lock()
+	defer im.Mu.Unlock()
 	for word := range localIndex {
-		s.Index[word] = append(s.Index[word], filePath)
+		im.Index[word] = append(im.Index[word], filePath)
 	}
 
 	return nil

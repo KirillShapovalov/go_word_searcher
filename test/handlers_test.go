@@ -73,7 +73,7 @@ func TestUploadFile(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, "expected status 200, got %d, response: %s", w.Code, w.Body.String())
 
 	// Проверка, что файл добавлен в хранилище
-	files := s.GetFiles()
+	files := s.FileManager.GetFiles()
 	assert.Contains(t, files, upload.UploadDir+fileName, "Uploaded file not found in storage")
 
 	// Проверка, что файл существует на диске
@@ -92,9 +92,9 @@ func TestListFiles(t *testing.T) {
 	r := setupRouter(s)
 
 	// Добавляем тестовые файлы в хранилище
-	s.AddFile("testfile1.txt")
-	s.AddFile("testfile2.txt")
-	defer s.ClearFiles() // Очищаем хранилище после теста
+	s.FileManager.AddFile("testfile1.txt")
+	s.FileManager.AddFile("testfile2.txt")
+	defer s.FileManager.ClearFiles() // Очищаем хранилище после теста
 
 	req, _ := http.NewRequest("GET", "/files", nil)
 	w := httptest.NewRecorder()
@@ -116,13 +116,13 @@ func TestSearchKeyword(t *testing.T) {
 	r := setupRouter(s)
 
 	// Добавляем файлы в хранилище и создаём индекс
-	s.AddFile("testfile1.txt")
-	s.AddFile("testfile2.txt")
-	defer s.ClearFiles()
+	s.FileManager.AddFile("testfile1.txt")
+	s.FileManager.AddFile("testfile2.txt")
+	defer s.FileManager.ClearFiles()
 
-	s.IdxMu.Lock()
-	s.Index["test"] = []string{"testfile1.txt"}
-	s.IdxMu.Unlock()
+	s.IndexManager.Mu.Lock()
+	s.IndexManager.Index["test"] = []string{"testfile1.txt"}
+	s.IndexManager.Mu.Unlock()
 
 	req, _ := http.NewRequest("GET", "/search?keyword=test", nil)
 	w := httptest.NewRecorder()
@@ -144,8 +144,8 @@ func TestSearchKeywordFileError(t *testing.T) {
 	r := setupRouter(s)
 
 	// Добавляем недоступный файл в хранилище
-	s.AddFile("non_existent_file.txt")
-	defer s.ClearFiles()
+	s.FileManager.AddFile("non_existent_file.txt")
+	defer s.FileManager.ClearFiles()
 
 	// Выполняем поиск по ключевому слову
 	req, _ := http.NewRequest("GET", "/search?keyword=test", nil)
@@ -189,12 +189,12 @@ func TestSearchKeywordNotFound(t *testing.T) {
 	}
 
 	// Добавляем файлы в хранилище, но не создаём индекс
-	s.AddFile(tmpFile.Name())
-	defer s.ClearFiles()
+	s.FileManager.AddFile(tmpFile.Name())
+	defer s.FileManager.ClearFiles()
 
-	s.IdxMu.Lock()
-	s.Index["test"] = []string{tmpFile.Name()}
-	s.IdxMu.Unlock()
+	s.IndexManager.Mu.Lock()
+	s.IndexManager.Index["test"] = []string{tmpFile.Name()}
+	s.IndexManager.Mu.Unlock()
 
 	req, _ := http.NewRequest("GET", "/search?keyword=unknown", nil)
 	w := httptest.NewRecorder()

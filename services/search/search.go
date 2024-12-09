@@ -16,7 +16,7 @@ import (
 
 func FindWordInFiles(keyword string, fileStorage *storage.FileStorage) ([]string, error) {
 	// Получаем файлы из хранилища
-	filesInStorage := fileStorage.GetFiles()
+	filesInStorage := fileStorage.FileManager.GetFiles()
 	if len(filesInStorage) == 0 {
 		return nil, errors.New("no files available for search")
 	}
@@ -42,10 +42,10 @@ func FindWordInFiles(keyword string, fileStorage *storage.FileStorage) ([]string
 
 // checkIndexForKeyword проверяет наличие слова в индексе.
 func checkIndexForKeyword(keyword string, fileStorage *storage.FileStorage) []string {
-	fileStorage.IdxMu.RLock()
-	defer fileStorage.IdxMu.RUnlock()
+	fileStorage.IndexManager.Mu.RLock()
+	defer fileStorage.IndexManager.Mu.RUnlock()
 
-	if files, found := fileStorage.Index[keyword]; found && len(files) > 0 {
+	if files, found := fileStorage.IndexManager.Index[keyword]; found && len(files) > 0 {
 		return files
 	}
 	return nil
@@ -146,7 +146,7 @@ func containsWordInFile(ctx context.Context, filePath, keyword string) (bool, er
 
 // updateIndexForKeyword добавляет найденные файлы в индекс.
 func updateIndexForKeyword(keyword string, files []string, fileStorage *storage.FileStorage) {
-	fileStorage.IdxMu.Lock()
-	defer fileStorage.IdxMu.Unlock()
-	fileStorage.Index[keyword] = files
+	fileStorage.IndexManager.Mu.Lock()
+	defer fileStorage.IndexManager.Mu.Unlock()
+	fileStorage.IndexManager.Index[keyword] = files
 }

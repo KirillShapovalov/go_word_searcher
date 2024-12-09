@@ -39,11 +39,11 @@ func (h *Handlers) UploadFile(c *gin.Context) {
 	}
 
 	// Добавляем файл в хранилище
-	h.Storage.AddFile(filePath)
+	h.Storage.FileManager.AddFile(filePath)
 
 	// Индексируем содержимое файла
 	go func() {
-		if err := h.Storage.IndexFile(filePath); err != nil {
+		if err := h.Storage.IndexManager.IndexFile(filePath); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error while indexing file": err.Error()})
 			return
 		}
@@ -53,7 +53,7 @@ func (h *Handlers) UploadFile(c *gin.Context) {
 }
 
 func (h *Handlers) ListFiles(c *gin.Context) {
-	files := h.Storage.GetFiles()
+	files := h.Storage.FileManager.GetFiles()
 	c.JSON(http.StatusOK, gin.H{"files": files})
 }
 
@@ -76,7 +76,7 @@ func (h *Handlers) SearchKeyword(c *gin.Context) {
 		return
 	}
 
-	if files == nil {
+	if len(files) == 0 {
 		c.JSON(http.StatusOK, gin.H{"files": nil})
 		return
 	}
