@@ -2,6 +2,7 @@ package search
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -52,6 +53,9 @@ func checkIndexForKeyword(keyword string, fileStorage *storage.FileStorage) []st
 
 // parallelSearch выполняет параллельный поиск слова в списке файлов.
 func parallelSearch(files []string, keyword string) ([]string, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	resultChan := make(chan string, len(files))
 	errorChan := make(chan error, len(files))
 	var _errors []error
@@ -61,13 +65,21 @@ func parallelSearch(files []string, keyword string) ([]string, error) {
 		wg.Add(1)
 		go func(path string) {
 			defer wg.Done()
-			found, err := containsWordInFile(path, keyword)
+			found, err := containsWordInFile(ctx, path, keyword)
 			if err != nil {
-				errorChan <- fmt.Errorf("error in file %s: %w", path, err)
+				select {
+				case errorChan <- fmt.Errorf("error in file %s: %w", path, err):
+					cancel()
+				case <-ctx.Done():
+				}
 				return
 			}
 			if found {
-				resultChan <- path
+				select {
+				case resultChan <- path:
+					cancel()
+				case <-ctx.Done():
+				}
 			}
 		}(filePath)
 	}
@@ -81,13 +93,24 @@ func parallelSearch(files []string, keyword string) ([]string, error) {
 
 	// Сбор результатов
 	var result []string
-	for path := range resultChan {
-		result = append(result, path)
-	}
-
-	// Проверка на ошибки
-	for err := range errorChan {
-		_errors = append(_errors, err)
+	for {
+		select {
+		case path, ok := <-resultChan:
+			if !ok {
+				resultChan = nil
+			} else {
+				result = append(result, path)
+			}
+		case err, ok := <-errorChan:
+			if !ok {
+				errorChan = nil
+			} else {
+				_errors = append(_errors, err)
+			}
+		}
+		if resultChan == nil && errorChan == nil {
+			break
+		}
 	}
 
 	if len(_errors) > 0 {
@@ -98,7 +121,7 @@ func parallelSearch(files []string, keyword string) ([]string, error) {
 }
 
 // containsWordInFile проверяет наличие слова в одном файле.
-func containsWordInFile(filePath, keyword string) (bool, error) {
+func containsWordInFile(ctx context.Context, filePath, keyword string) (bool, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Printf("warning: failed to open %s to search in: %v", filePath, err)
@@ -108,6 +131,11 @@ func containsWordInFile(filePath, keyword string) (bool, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err()
+		default:
+		}
 		if strings.Contains(scanner.Text(), keyword) {
 			return true, nil
 		}
